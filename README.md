@@ -48,7 +48,7 @@ This will perform the following actions:
 - Navigate to Weverse's login page and log in using the credentials from `.env`.
 - Navigate to the specified feed after logging in.
 - Scroll through the feed to load more content.
-- Scrape and download images found on the feed.
+- Scrape and download only new images found on the feed by cross-referencing with a local file that tracks downloaded images.
 
 Images will be saved in a directory named `downloaded_images_TIMESTAMP`, where `TIMESTAMP` is the current date and time.
 
@@ -56,4 +56,4 @@ Images will be saved in a directory named `downloaded_images_TIMESTAMP`, where `
 
 - `get_h1_text(driver)`: Extracts the text inside the first `<h1>` tag on the current page of the given driver.
 - `screenshot(driver, name, directory="./screenshots/")`: Saves a screenshot of the current state of the driver.
-- `scrape_images(driver, scroll_times=3, scroll_delay=2)`: Scrolls, scrapes images, and downloads them to a local directory.
+- `scrape_images(driver, scroll_times=3, scroll_delay=2)`: Scrolls, scrapes images, and downloads them to a local directory, ensuring only new images are downloaded.
