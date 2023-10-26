@@ -21,6 +21,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
+def save_urls_to_file(urls, filename="saved_urls.txt"):
+    with open(filename, 'w') as f:
+        for url in urls:
+            f.write(url + '\n')
+
+def load_urls_from_file(filename="saved_urls.txt"):
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            return set(line.strip() for line in f)
+    return set()
+
 def get_h1_text(driver):
     """
     Extracts the text inside the first <h1> tag on the current page of the given driver.
@@ -77,33 +88,42 @@ def scrape_images(driver, scroll_times=3, scroll_delay=2):
     # Extract profile thumbnail image
     profile_thumbnails = driver.find_elements(By.CSS_SELECTOR, ".ProfileThumbnailView_thumbnail__8W3E7 img")
     profile_images = [img.get_attribute("src") for img in profile_thumbnails]
-    # logging.info(f"Found {len(profile_images)} profile thumbnail images.")
 
     # Extract post images
     post_images = driver.find_elements(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
     post_img_links = [img.get_attribute("src") for img in post_images]
     logging.info(f"Found {len(post_img_links)} post images.")
 
-    # Combine and return the lists
+    # Combine the lists
     all_images = profile_images + post_img_links
 
-    # Create a directory named with the current timestamp
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    directory_name = f"downloaded_images_{timestamp}"
-    if not os.path.exists(directory_name):
-        os.makedirs(directory_name)
-    logging.info(f"Created directory: {directory_name}")
+    # Load existing URLs
+    existing_urls = load_urls_from_file()
 
-    # Download images
-    for idx, img_url in enumerate(all_images, 1):
-        img_response = requests.get(img_url, stream=True)
-        img_name = os.path.join(directory_name, f"image_{idx}.jpg")
-        with open(img_name, 'wb') as img_file:
-            for chunk in img_response.iter_content(chunk_size=1024):
-                img_file.write(chunk)
-        logging.info(f"Downloaded {img_name}")
+    # Filter out images already saved
+    new_image_urls = [url for url in all_images if url not in existing_urls]
 
-    return all_images
+    # Create a directory named with the current timestamp if there are new images
+    if new_image_urls:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        directory_name = f"downloaded_images_{timestamp}"
+        if not os.path.exists(directory_name):
+            os.makedirs(directory_name)
+        logging.info(f"Created directory: {directory_name}")
+
+        # Download new images
+        for idx, img_url in enumerate(new_image_urls, 1):
+            img_response = requests.get(img_url, stream=True)
+            img_name = os.path.join(directory_name, f"image_{idx}.jpg")
+            with open(img_name, 'wb') as img_file:
+                for chunk in img_response.iter_content(chunk_size=1024):
+                    img_file.write(chunk)
+            logging.info(f"Downloaded {img_name}")
+
+        # Update the saved URLs
+        save_urls_to_file(existing_urls.union(new_image_urls))
+
+    return new_image_urls
 
 # chromedriver_autoinstaller.install()
 # logging.info("Chromedriver installed.")
@@ -175,6 +195,7 @@ if h1_after_login == "weverse":
     logging.info("Successfully logged in!")
     # Navigate to the desired page after logging in
     desired_url_after_login = "https://weverse.io/newjeansofficial/feed"
+    # desired_url_after_login = "https://weverse.io/riize/feed"
     driver.get(desired_url_after_login)
     time.sleep(5)
     screenshot(driver, "desired_url_agter_login")
