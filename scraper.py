@@ -117,18 +117,19 @@ user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument(f"user-agent={user_agent}")
 # chrome_options.add_argument("--window-size=1920,1080")
+chrome_options.add_argument("--log-level=3")
 chrome_options.add_argument("--headless")
 
 # Initialize the WebDriver with the options
 driver = uc.Chrome(options=chrome_options)
 
-# Print the current url
-logging.info(driver.current_url)
-
 # Navigate to the login page
 driver.get("https://account.weverse.io/ja/login/redirect?client_id=weverse&redirect_uri=https%3A%2F%2Fweverse.io%2FloginResult%3Ftopath%3D%252F")
 
 time.sleep(2)
+
+# Print the current url
+logging.info(f"URL: {driver.current_url}")
 
 # Use WebDriverWait to ensure the email input is present and interactable
 email_elem = WebDriverWait(driver, 10).until(
@@ -152,9 +153,6 @@ password_elem = driver.find_element(By.NAME, 'password')
 password_elem.send_keys(PASSWORD)
 
 time.sleep(2)
-
-# Print the current url
-logging.info(driver.current_url)
 
 # Print the content of the <h1> tag
 logging.info(f"h1: {get_h1_text(driver)}")
