@@ -3,6 +3,8 @@ import logging
 import time
 from datetime import datetime
 
+import requests
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -11,6 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 # import chromedriver_autoinstaller
 import undetected_chromedriver as uc
 from dotenv import load_dotenv
+
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -35,8 +38,75 @@ def get_h1_text(driver):
         logging.error(f"Error retrieving <h1> text: {e}")
         return None
 
+def screenshot(driver, name, directory="./screenshots/"):
+    """
+    Save a screenshot of the current state of the driver.
+
+    Args:
+    - driver: The Selenium WebDriver instance.
+    - directory: The directory where the screenshot will be saved. Defaults to "./screenshots/".
+
+    Returns:
+    - The path to the saved screenshot.
+    """
+    # Ensure the directory exists, if not, create it
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        logging.info(f"Created directory: {directory}")
+    
+    # Generate a timestamped filename
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    screenshot_name = f"{directory}{name}_{timestamp}.png"
+    
+    # Save the screenshot
+    driver.save_screenshot(screenshot_name)
+    logging.info(f"Saved screenshot as: {screenshot_name}")
+    
+    return screenshot_name
+
+def scrape_images(driver, scroll_times=3, scroll_delay=2):
+    for i in range(scroll_times):
+        # Scroll down
+        driver.execute_script("window.scrollBy(0, 2000);")
+        logging.info(f"Scrolled {i + 1} out of {scroll_times} times.")
+
+        # Wait for content to load
+        time.sleep(scroll_delay)
+        logging.info(f"Waited for {scroll_delay} seconds after scrolling.")
+
+    # Extract profile thumbnail image
+    profile_thumbnails = driver.find_elements(By.CSS_SELECTOR, ".ProfileThumbnailView_thumbnail__8W3E7 img")
+    profile_images = [img.get_attribute("src") for img in profile_thumbnails]
+    # logging.info(f"Found {len(profile_images)} profile thumbnail images.")
+
+    # Extract post images
+    post_images = driver.find_elements(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
+    post_img_links = [img.get_attribute("src") for img in post_images]
+    logging.info(f"Found {len(post_img_links)} post images.")
+
+    # Combine and return the lists
+    all_images = profile_images + post_img_links
+
+    # Create a directory named with the current timestamp
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    directory_name = f"downloaded_images_{timestamp}"
+    if not os.path.exists(directory_name):
+        os.makedirs(directory_name)
+    logging.info(f"Created directory: {directory_name}")
+
+    # Download images
+    for idx, img_url in enumerate(all_images, 1):
+        img_response = requests.get(img_url, stream=True)
+        img_name = os.path.join(directory_name, f"image_{idx}.jpg")
+        with open(img_name, 'wb') as img_file:
+            for chunk in img_response.iter_content(chunk_size=1024):
+                img_file.write(chunk)
+        logging.info(f"Downloaded {img_name}")
+
+    return all_images
+
 # chromedriver_autoinstaller.install()
-logging.info("Chromedriver installed.")
+# logging.info("Chromedriver installed.")
 
 # Initialize the Chrome WebDriver
 # driver = webdriver.Chrome()
@@ -87,7 +157,7 @@ time.sleep(2)
 logging.info(driver.current_url)
 
 # Print the content of the <h1> tag
-logging.info(get_h1_text(driver))
+logging.info(f"h1: {get_h1_text(driver)}")
 
 
 # Find and click the login button
@@ -98,22 +168,20 @@ login_button.click()
 
 time.sleep(10)
 
-# Print the content of the <h1> tag
-logging.info(get_h1_text(driver))
+screenshot(driver, "after_login")
 
-# Define the directory
-screenshot_directory = "./screenshots/"
+h1_after_login = get_h1_text(driver)
+logging.info(f"h1: {get_h1_text(driver)}")
 
-# Ensure the directory exists, if not, create it
-if not os.path.exists(screenshot_directory):
-    os.makedirs(screenshot_directory)
-
-# Generate a timestamp
-timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-screenshot_name = f"{screenshot_directory}weverse_{timestamp}.png"
-
-# Save the screenshot with the timestamped filename in the specified directory
-driver.save_screenshot(screenshot_name)
+if h1_after_login == "weverse":
+    logging.info("Successfully logged in!")
+    # Navigate to the desired page after logging in
+    desired_url_after_login = "https://weverse.io/newjeansofficial/feed"
+    driver.get(desired_url_after_login)
+    time.sleep(5)
+    screenshot(driver, "desired_url_agter_login")
+    scraped_images = scrape_images(driver, scroll_times=10)
+    # logging.info(scraped_images)
 
 # Add other actions or wait as necessary
 
