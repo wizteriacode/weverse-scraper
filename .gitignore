@@ -2,3 +2,4 @@ screenshots
 .env
 downloaded_images_*
 .DS_Store
+saved_urls.txt
