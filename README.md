@@ -1,6 +1,6 @@
 # weverse-scraper
 
-This Python script logs into Weverse, navigates to a specified feed, and then scrapes and downloads images from the user's feed.
+This Python script logs into Weverse, navigates to a specified feed, and then scrapes and downloads images from the user's feed. Only new images that haven't been previously downloaded are saved.
 
 ## Table of Contents
 
@@ -48,12 +48,12 @@ This will perform the following actions:
 - Navigate to Weverse's login page and log in using the credentials from `.env`.
 - Navigate to the specified feed after logging in.
 - Scroll through the feed to load more content.
-- Scrape and download only new images found on the feed by cross-referencing with a local file that tracks downloaded images.
+- Scrape and download only new images found on the feed by cross-referencing with a local file that tracks previously downloaded images.
 
-Images will be saved in a directory named `downloaded_images_TIMESTAMP`, where `TIMESTAMP` is the current date and time.
+Images will be saved in a directory structure: `downloaded_images/downloaded_images_TIMESTAMP`, where `TIMESTAMP` is the current date and time. Screenshots taken during the script's execution will be saved in the `screenshots/TIMESTAMP` directory.
 
 ## Functions
 
 - `get_h1_text(driver)`: Extracts the text inside the first `<h1>` tag on the current page of the given driver.
 - `screenshot(driver, name, directory="./screenshots/")`: Saves a screenshot of the current state of the driver.
-- `scrape_images(driver, scroll_times=3, scroll_delay=2)`: Scrolls, scrapes images, and downloads them to a local directory, ensuring only new images are downloaded.
+- `scrape_images(driver, scroll_times=3, scroll_delay=2)`: Scrolls, scrapes images, and downloads them to a local directory. This function ensures only new images are downloaded by checking against a local file of previously downloaded image URLs.
