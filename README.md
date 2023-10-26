@@ -46,14 +46,14 @@ python scraper.py
 This will perform the following actions:
 - Launch Chrome WebDriver.
 - Navigate to Weverse's login page and log in using the credentials from `.env`.
-- Navigate to the specified feed after logging in.
+- Navigate to the specified feed of multiple artists after logging in.
 - Scroll through the feed to load more content.
 - Scrape and download only new images found on the feed by cross-referencing with a local file that tracks previously downloaded images.
 
-Images will be saved in a directory structure: `downloaded_images/downloaded_images_TIMESTAMP`, where `TIMESTAMP` is the current date and time. Screenshots taken during the script's execution will be saved in the `screenshots/TIMESTAMP` directory.
+Images will be saved in a directory structure: `downloaded_images/ARTIST_NAME/downloaded_images_TIMESTAMP`, where `TIMESTAMP` is the current date and time. Screenshots taken during the script's execution will be saved in the `screenshots` directory with filenames in the format: `ARTIST_NAME_feed_after_login_TIMESTAMP.png`.
 
 ## Functions
 
 - `get_h1_text(driver)`: Extracts the text inside the first `<h1>` tag on the current page of the given driver.
 - `screenshot(driver, name, directory="./screenshots/")`: Saves a screenshot of the current state of the driver.
-- `scrape_images(driver, scroll_times=3, scroll_delay=2)`: Scrolls, scrapes images, and downloads them to a local directory. This function ensures only new images are downloaded by checking against a local file of previously downloaded image URLs.
+- `scrape_images(driver, artist_name, scroll_times=3, scroll_delay=2)`: Scrolls, scrapes images, and downloads them to a local directory. This function ensures only new images are downloaded by checking against a local file of previously downloaded image URLs.

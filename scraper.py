@@ -24,7 +24,6 @@ PASSWORD = os.getenv("PASSWORD")
 # Create a unique directory for this execution to store screenshots and downloads
 EXECUTION_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S/")
 SCREENSHOT_DIR = os.path.join("screenshots", EXECUTION_TIMESTAMP)
-DOWNLOAD_DIR = os.path.join("downloaded_images", EXECUTION_TIMESTAMP)
 
 def save_urls_to_file(urls, filename="saved_urls.txt"):
     with open(filename, 'w') as f:
@@ -80,7 +79,7 @@ def screenshot(driver, name, directory=SCREENSHOT_DIR):
     
     return screenshot_name
 
-def scrape_images(driver, scroll_times=3, scroll_delay=2):
+def scrape_images(driver, artist_name, scroll_times=3, scroll_delay=2):
     for i in range(scroll_times):
         # Scroll down
         driver.execute_script("window.scrollBy(0, 2000);")
@@ -110,15 +109,16 @@ def scrape_images(driver, scroll_times=3, scroll_delay=2):
 
     # Create a directory named with the current timestamp if there are new images
     if new_image_urls:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        if not os.path.exists(DOWNLOAD_DIR):
-            os.makedirs(DOWNLOAD_DIR)
-        logging.info(f"Created directory: {DOWNLOAD_DIR}")
+        # Update the directory creation logic
+        directory_name = f"downloaded_images/{artist_name}/{EXECUTION_TIMESTAMP}"
+        if not os.path.exists(directory_name):
+            os.makedirs(directory_name)
+        logging.info(f"Created directory: {directory_name}")
 
         # Download new images
         for idx, img_url in enumerate(new_image_urls, 1):
             img_response = requests.get(img_url, stream=True)
-            img_name = os.path.join(DOWNLOAD_DIR, f"image_{idx}.jpg")
+            img_name = os.path.join(directory_name, f"image_{idx}.jpg")
             with open(img_name, 'wb') as img_file:
                 for chunk in img_response.iter_content(chunk_size=1024):
                     img_file.write(chunk)
@@ -197,14 +197,24 @@ logging.info(f"h1: {get_h1_text(driver)}")
 
 if h1_after_login == "weverse":
     logging.info("Successfully logged in!")
-    # Navigate to the desired page after logging in
-    desired_url_after_login = "https://weverse.io/newjeansofficial/feed"
-    # desired_url_after_login = "https://weverse.io/riize/feed"
-    driver.get(desired_url_after_login)
-    time.sleep(5)
-    screenshot(driver, "desired_url_agter_login")
-    scraped_images = scrape_images(driver, scroll_times=10)
-    # logging.info(scraped_images)
+    artists = ["newjeansofficial", "riize"]
+
+    for artist in artists:
+        logging.info(f"Processing artist: {artist}")
+
+        desired_url_after_login = f"https://weverse.io/{artist}/feed"
+        logging.info(f"Navigating to {desired_url_after_login}")
+        driver.get(desired_url_after_login)
+
+        time.sleep(5)
+        logging.info(f"Taking a screenshot for artist {artist} after navigation")
+        screenshot(driver, f"{artist}_feed_after_login")
+
+        logging.info(f"Starting image scraping for artist {artist}")
+        scraped_images = scrape_images(driver, artist, scroll_times=10)
+        logging.info(f"Scraped {len(scraped_images)} new images for artist {artist}")
+
+        logging.info(f"Finished processing artist: {artist}")
 
 # Add other actions or wait as necessary
 
