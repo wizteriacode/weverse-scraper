@@ -36,28 +36,6 @@ class DropboxSyncBot:
                 return False
             raise
 
-    # def sync_folder(self, local_folder, dropbox_folder):
-        # for root, dirs, files in os.walk(local_folder):
-            # for dir in dirs.copy():  # We use .copy() to iterate over a copy of the list, so removing items won't cause issues
-                # local_dir_path = os.path.join(root, dir)
-                # relative_dir_path = os.path.relpath(local_dir_path, local_folder)
-                # dropbox_dir_path = os.path.join(dropbox_folder, relative_dir_path)
-                # if self.directory_exists(dropbox_dir_path):
-                    # logging.info(f"Skipping existing directory: {dropbox_dir_path}")
-                    # dirs.remove(dir)
-
-            # for file in files:
-                # if file == ".DS_Store":
-                    # continue  # skip .DS_Store files
-                
-                # local_path = os.path.join(root, file)
-                # relative_path = os.path.relpath(local_path, local_folder)
-                # dropbox_path = os.path.join(dropbox_folder, relative_path)
-                # if not self.file_exists(dropbox_path):
-                    # logging.info(f"Attempting to upload: {local_path} to {dropbox_path}")
-                    # self.upload_file(local_path, dropbox_path)
-                    # logging.info(f"Uploaded {local_path} to {dropbox_path}")
-
     def send_discord_embed(self, title, directory_name, url, artist, page_type):
         data = {
             "embeds": [{
@@ -91,9 +69,9 @@ class DropboxSyncBot:
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            print(err)
+            logging.error(err)
         else:
-            print("Payload delivered successfully, code {}.".format(response.status_code))
+            loggig.info("Payload delivered successfully, code {}.".format(response.status_code))
 
     def sync_folder(self, local_folder, dropbox_folder):
         for root, dirs, files in os.walk(local_folder):
