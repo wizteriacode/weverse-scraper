@@ -1,6 +1,6 @@
 # weverse-scraper
 
-This Python script logs into Weverse, navigates to specified feeds and artist pages, and then scrapes and downloads images. Only new images that haven't been previously downloaded are saved. Once the images are scraped and downloaded, they are synced to a specified Dropbox directory.
+This Python script logs into Weverse, navigates to specified feeds and artist pages, and then scrapes and downloads images. Only new images that haven't been previously downloaded are saved. Once the images are scraped and downloaded, they are synced to a specified Dropbox directory and any new directories created during the sync are alerted via Discord.
 
 ## Table of Contents
 
@@ -9,6 +9,7 @@ This Python script logs into Weverse, navigates to specified feeds and artist pa
 - [Usage](#usage)
 - [Functions](#functions)
 - [Dropbox Sync](#dropbox-sync)
+- [Discord Alerts](#discord-alerts)
 
 ## Requirements
 
@@ -32,11 +33,12 @@ This Python script logs into Weverse, navigates to specified feeds and artist pa
    pip3 install -r requirements.txt
    ```
 
-3. Create a `.env` file in the root directory and provide your Weverse credentials and Dropbox token:
+3. Create a `.env` file in the root directory and provide your Weverse credentials, Dropbox token, and Discord webhook URL:
    ```
    EMAIL=your_email_here
    PASSWORD=your_password_here
    DROPBOX_TOKEN=your_dropbox_token_here
+   DISCORD_WEBHOOK_URL=your_discord_webhook_url_here
    ```
 
 ## Usage
@@ -85,8 +87,14 @@ This automatic maintenance ensures efficient cross-referencing of new images wit
 
 After successfully scraping and downloading images from Weverse, the script initiates a sync process to a specified Dropbox directory. The Dropbox syncing is handled by the `DropboxSyncBot` class, which checks for new directories and files to sync while avoiding redundant uploads.
 
-The script will send an alert to a Discord channel via a webhook upon successful creation of a new directory in Dropbox. The alert provides details such as the artist, page type, and a direct link to the newly created directory in Dropbox.
-
 To set up Dropbox sync:
 1. Ensure you have the `DROPBOX_TOKEN` set in the `.env` file.
 2. The script will sync the downloaded images to a directory structure in Dropbox that mirrors the local structure.
+
+## Discord Alerts
+
+The script incorporates a feature to send alerts to a Discord channel via a webhook. These alerts are triggered upon the successful creation of a new directory in Dropbox during the sync process. The alert provides details such as the artist, page type, directory name, and a direct link to the newly created directory in Dropbox.
+
+To set up Discord alerts:
+1. Provide your Discord webhook URL in the `.env` file with the key `DISCORD_WEBHOOK_URL`.
+2. The script will automatically send alerts when new directories are synced to Dropbox.
