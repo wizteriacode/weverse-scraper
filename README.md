@@ -40,7 +40,7 @@ This Python script logs into Weverse, navigates to specified feeds and artist pa
 
 Run the script:
 ```
-python scraper.py
+python3 scraper.py
 ```
 
 This will perform the following actions:
