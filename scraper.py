@@ -22,16 +22,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
-DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
-bot = DropboxSyncBot(DROPBOX_TOKEN)
-
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+
+DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
+bot = DropboxSyncBot(DROPBOX_TOKEN, DISCORD_WEBHOOK_URL)
 
 # Create a unique directory for this execution to store screenshots and downloads
 EXECUTION_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S/")
 SCREENSHOT_DIR = os.path.join("screenshots", EXECUTION_TIMESTAMP)
 
 ARTISTS = ["newjeansofficial", "riize", "seventeen", "redvelvet"]
+# ARTISTS = ["riize", "redvelvet"]
 
 def save_urls_to_file(urls, page_type, filename=None):
     if filename is None:
@@ -362,19 +363,22 @@ if h1_after_login == "weverse":
         local_directory = f"./downloaded_images/{artist}"
         dropbox_directory = f"/weverse/{artist}"
 
-        try:
-            logging.info(f"Starting Dropbox sync for artist {artist}...")
-            bot.sync_folder(local_directory, dropbox_directory)
-            logging.info(f"Completed Dropbox sync for artist {artist}.")
-        except Exception as e:
-            error_title = f"Error for Artist: {artist}"
-            error_description = f"Error during Dropbox sync: {e}"
-            logging.error(f"{error_title} - {error_description}")
-            send_discord_alert(error_title, error_description)
-
         logging.info(f"Finished processing artist: {artist}")
 
-# Add other actions or wait as necessary
+# After scraping for all artists, start the syncing process
+for artist in ARTISTS:
+    local_directory = f"./downloaded_images/{artist}"
+    dropbox_directory = f"/weverse/{artist}"
+
+    try:
+        logging.info(f"Starting Dropbox sync for artist {artist}...")
+        bot.sync_folder(local_directory, dropbox_directory)
+        logging.info(f"Completed Dropbox sync for artist {artist}.")
+    except Exception as e:
+        error_title = f"Error for Artist: {artist}"
+        error_description = f"Error during Dropbox sync: {e}"
+        logging.error(f"{error_title} - {error_description}")
+        send_discord_alert(error_title, error_description)
 
 # Close the browser
 driver.close()
