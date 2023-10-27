@@ -4,3 +4,4 @@ screenshots
 feed_saved_urls.txt
 artist_saved_urls.txt
 downloaded_images/
+__pycache__
