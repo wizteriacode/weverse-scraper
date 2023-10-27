@@ -49,6 +49,34 @@ def clean_url(url):
     base_url = url.split('?')[0]
     return base_url
 
+def trim_saved_urls(filename, max_urls=1000):
+    """
+    Trim the saved URLs file to keep only the most recent URLs.
+
+    Args:
+    - filename: The file containing the saved URLs.
+    - max_urls: The maximum number of URLs to retain. Older URLs beyond this number will be removed.
+    """
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            urls = f.readlines()
+
+        # Check if the number of URLs exceeds the maximum allowed
+        if len(urls) > max_urls:
+            # Split URLs into those to retain and those to remove
+            removed_urls = urls[:-max_urls]
+            trimmed_urls = urls[-max_urls:]
+
+            # Log the number of removed URLs and the actual URLs
+            logging.info(f"Removing {len(removed_urls)} URLs:")
+            for url in removed_urls:
+                logging.info(url.strip())
+
+            # Write the trimmed URLs back to the file
+            with open(filename, 'w') as f:
+                f.writelines(trimmed_urls)
+            logging.info(f"Trimmed saved URLs to the last {max_urls} entries.")
+
 def get_h1_text(driver):
     """
     Extracts the text inside the first <h1> tag on the current page of the given driver.
@@ -146,6 +174,9 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
         # Update the saved URLs
         save_urls_to_file(existing_urls.union(new_image_urls), 'feed')
 
+        # Trim the saved URLs to keep only the most recent ones
+        trim_saved_urls(f"feed_saved_urls.txt")
+
     return new_image_urls
 
 
@@ -203,6 +234,9 @@ def scrape_artist_images(driver, artist_name, max_scroll_times=50, scroll_delay=
 
     # Save new URLs
     save_urls_to_file(existing_urls.union(new_image_urls), 'artist')
+
+    # Trim the saved URLs to keep only the most recent ones
+    trim_saved_urls(f"artist_saved_urls.txt")
 
     return new_image_urls
 

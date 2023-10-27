@@ -67,3 +67,14 @@ Screenshots taken during the script's execution will be saved in the `screenshot
 - `scrape_artist_images(driver, artist_name, max_scroll_times=50, scroll_delay=2)`: Scrolls, scrapes images from the artist page, and downloads them until encountering previously saved images or reaching the maximum scroll limit. 
 
 Both scraping functions ensure only new images are downloaded by checking against a local file of previously downloaded image URLs.
+
+## Maintenance
+
+The script maintains a local file for tracking downloaded image URLs. To ensure that this file doesn't grow indefinitely, the script is designed to:
+
+1. Trim the file by retaining only the most recent URLs when the number of saved URLs exceeds a specified limit.
+2. Log the removed URLs for reference and documentation purposes.
+3. Provide statistics on the number of removed URLs.
+
+This automatic maintenance ensures efficient cross-referencing of new images without letting the saved URLs file become overly large.
+
