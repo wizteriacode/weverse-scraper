@@ -25,17 +25,29 @@ EXECUTION_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S/")
 SCREENSHOT_DIR = os.path.join("screenshots", EXECUTION_TIMESTAMP)
 
 ARTISTS = ["newjeansofficial", "riize", "seventeen", "redvelvet"]
+# ARTISTS = ["riize"]
 
-def save_urls_to_file(urls, filename="saved_urls.txt"):
+def save_urls_to_file(urls, page_type, filename=None):
+    if filename is None:
+        filename = f"{page_type}_saved_urls.txt"
     with open(filename, 'w') as f:
         for url in urls:
             f.write(url + '\n')
 
-def load_urls_from_file(filename="saved_urls.txt"):
+def load_urls_from_file(page_type, filename=None):
+    if filename is None:
+        filename = f"{page_type}_saved_urls.txt"
     if os.path.exists(filename):
         with open(filename, 'r') as f:
             return set(line.strip() for line in f)
     return set()
+
+def clean_url(url):
+    """
+    Clean the URL to remove the type parameter.
+    """
+    base_url = url.split('?')[0]
+    return base_url
 
 def get_h1_text(driver):
     """
@@ -80,12 +92,68 @@ def screenshot(driver, name, directory=SCREENSHOT_DIR):
     
     return screenshot_name
 
+# def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
+#     scroll_count = 0
+#     all_images = set()  # Use a set to avoid duplicate URLs
+# 
+#     # Load existing URLs
+#     existing_urls = {clean_url(url) for url in load_urls_from_file()}
+# 
+#     while True:
+#         # Scroll down
+#         driver.execute_script("window.scrollBy(0, 2000);")
+#         scroll_count += 1
+#         logging.info(f"Scrolled {scroll_count} times.")
+# 
+#         # Wait for content to load
+#         time.sleep(scroll_delay)
+# 
+#         # Extract post images
+#         post_images = driver.find_elements(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
+#         post_img_links = {img.get_attribute("src").split("?")[0] for img in post_images}
+# 
+#         # Update all_images set
+#         all_images.update(post_img_links)
+# 
+#         # If any of the currently found images matches a saved image URL or we've scrolled too many times, break the loop
+#         matching_saved_images = [url for url in all_images if url in existing_urls]
+#         if matching_saved_images:
+#             logging.info(f"Found saved image(s): {matching_saved_images}. Stopping the scroll.")
+#             break
+#         elif scroll_count >= max_scroll_times:
+#             logging.warning(f"Reached maximum scroll times ({max_scroll_times}). Stopping the scroll.")
+#             break
+# 
+#     # Filter out images already saved
+#     new_image_urls = list(set(clean_url(url) for url in all_images) - existing_urls)
+# 
+#     # Create a directory named with the current timestamp if there are new images
+#     if new_image_urls:
+#         directory_name = f"downloaded_images/{artist_name}/feed/{EXECUTION_TIMESTAMP}"
+#         if not os.path.exists(directory_name):
+#             os.makedirs(directory_name)
+#         logging.info(f"Created directory: {directory_name}")
+# 
+#         # Download new images
+#         for idx, img_url in enumerate(new_image_urls, 1):
+#             img_response = requests.get(img_url, stream=True)
+#             img_name = os.path.join(directory_name, f"image_{idx}.jpg")
+#             with open(img_name, 'wb') as img_file:
+#                 for chunk in img_response.iter_content(chunk_size=1024):
+#                     img_file.write(chunk)
+#             logging.info(f"Downloaded {img_name}")
+# 
+#         # Update the saved URLs
+#         save_urls_to_file(existing_urls.union(new_image_urls))
+# 
+#     return new_image_urls
+
 def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
     scroll_count = 0
-    all_images = set()  # Use a set to avoid duplicate URLs
+    all_images = set()
 
     # Load existing URLs
-    existing_urls = load_urls_from_file()
+    existing_urls = {clean_url(url) for url in load_urls_from_file("feed")}
 
     while True:
         # Scroll down
@@ -98,13 +166,13 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
 
         # Extract post images
         post_images = driver.find_elements(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
-        post_img_links = {img.get_attribute("src") for img in post_images}
+        post_img_links = {clean_url(img.get_attribute("src")) for img in post_images}
 
         # Update all_images set
         all_images.update(post_img_links)
 
         # If any of the currently found images matches a saved image URL or we've scrolled too many times, break the loop
-        matching_saved_images = [url for url in all_images if url in existing_urls]
+        matching_saved_images = [url for url in post_img_links if url in existing_urls]
         if matching_saved_images:
             logging.info(f"Found saved image(s): {matching_saved_images}. Stopping the scroll.")
             break
@@ -117,7 +185,7 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
 
     # Create a directory named with the current timestamp if there are new images
     if new_image_urls:
-        directory_name = f"downloaded_images/{artist_name}/{EXECUTION_TIMESTAMP}"
+        directory_name = f"downloaded_images/{artist_name}/feed/{EXECUTION_TIMESTAMP}"
         if not os.path.exists(directory_name):
             os.makedirs(directory_name)
         logging.info(f"Created directory: {directory_name}")
@@ -132,11 +200,67 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
             logging.info(f"Downloaded {img_name}")
 
         # Update the saved URLs
-        save_urls_to_file(existing_urls.union(new_image_urls))
+        save_urls_to_file(existing_urls.union(new_image_urls), 'feed')
 
     return new_image_urls
 
 
+def scrape_artist_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
+    scroll_count = 0
+    all_images = set()  # Use a set to avoid duplicate URLs
+
+    # Load existing URLs
+    existing_urls = {clean_url(url) for url in load_urls_from_file("artist")}
+
+    while True:
+        # Scroll down
+        driver.execute_script("window.scrollBy(0, 2000);")
+        scroll_count += 1
+        logging.info(f"Scrolled {scroll_count} times.")
+
+        # Wait for content to load
+        time.sleep(scroll_delay)
+
+        # Extract post images
+        post_images = driver.find_elements(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
+        post_img_links = {clean_url(img.get_attribute("src")) for img in post_images}
+
+
+        # Update all_images set
+        all_images.update(post_img_links)
+
+        # If any of the currently found images matches a saved image URL or we've scrolled too many times, break the loop
+        matching_saved_images = [url for url in all_images if url in existing_urls]
+        if matching_saved_images:
+            logging.info(f"Found saved image(s): {matching_saved_images}. Stopping the scroll.")
+            break
+        elif scroll_count >= max_scroll_times:
+            logging.warning(f"Reached maximum scroll times ({max_scroll_times}). Stopping the scroll.")
+            break
+
+    # Filter out images already saved
+    new_image_urls = list(set(clean_url(url) for url in all_images) - existing_urls)
+
+    # Create a directory named with the current timestamp if there are new images
+    if new_image_urls:
+        directory_name = f"downloaded_images/{artist_name}/artist/{EXECUTION_TIMESTAMP}"
+        if not os.path.exists(directory_name):
+            os.makedirs(directory_name)
+        logging.info(f"Created directory: {directory_name}")
+
+        # Download new images
+        for idx, img_url in enumerate(new_image_urls, 1):
+            img_response = requests.get(img_url, stream=True)
+            img_name = os.path.join(directory_name, f"image_{idx}.jpg")
+            with open(img_name, 'wb') as img_file:
+                for chunk in img_response.iter_content(chunk_size=8192):
+                    img_file.write(chunk)
+            logging.info(f"Saved image {idx} to {img_name}")
+
+    # Save new URLs
+    save_urls_to_file(existing_urls.union(new_image_urls), 'artist')
+
+    return new_image_urls
 
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
@@ -209,12 +333,25 @@ if h1_after_login == "weverse":
         driver.get(desired_url_after_login)
 
         time.sleep(5)
-        logging.info(f"Taking a screenshot for artist {artist} after navigation")
+        logging.info(f"Taking a screenshot for artist {artist}'s feed after navigation")
         screenshot(driver, f"{artist}_feed_after_login")
 
         logging.info(f"Starting image scraping for artist {artist}")
-        scraped_images = scrape_images(driver, artist)
-        logging.info(f"Scraped {len(scraped_images)} new images for artist {artist}")
+        # Scrape images from the artist's feed page
+        scraped_feed_image_urls = scrape_images(driver, artist)
+        logging.info(f"Scraped {len(scraped_feed_image_urls)} new images from {artist}'s feed.")
+
+        # Navigate to the artist's artist page
+        artist_page_url = f"https://weverse.io/{artist}/artist"
+        driver.get(artist_page_url)
+
+        time.sleep(5)
+        logging.info(f"Taking a screenshot for artist {artist}'s artist page after navigation")
+        screenshot(driver, f"{artist}_artist_page_after_login")
+
+        # Scrape images from the artist's artist page
+        scraped_artist_image_urls = scrape_artist_images(driver, artist)
+        logging.info(f"Scraped {len(scraped_artist_image_urls)} new images from {artist}'s artist page.")
 
         logging.info(f"Finished processing artist: {artist}")
 

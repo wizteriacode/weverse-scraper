@@ -1,5 +1,6 @@
 screenshots
 .env
-downloaded_images_*
 .DS_Store
-saved_urls.txt
+feed_saved_urls.txt
+artist_saved_urls.txt
+downloaded_images/
