@@ -13,6 +13,8 @@ from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
 from dotenv import load_dotenv
 
+from dropbox_sync import DropboxSyncBot
+
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,12 +22,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 
+DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
+bot = DropboxSyncBot(DROPBOX_TOKEN)
+
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+
 # Create a unique directory for this execution to store screenshots and downloads
 EXECUTION_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S/")
 SCREENSHOT_DIR = os.path.join("screenshots", EXECUTION_TIMESTAMP)
 
 ARTISTS = ["newjeansofficial", "riize", "seventeen", "redvelvet"]
-# ARTISTS = ["riize"]
 
 def save_urls_to_file(urls, page_type, filename=None):
     if filename is None:
@@ -41,6 +47,27 @@ def load_urls_from_file(page_type, filename=None):
         with open(filename, 'r') as f:
             return set(line.strip() for line in f)
     return set()
+
+def send_discord_alert(title, description):
+    """
+    Send an alert message to a Discord channel via webhook in the form of an embed.
+
+    Args:
+    - title: The title of the embed.
+    - description: The description/content of the embed.
+    """
+    payload = {
+        'embeds': [{
+            'title': title,
+            'description': description,
+            'color': 16711680  # Red color for error
+        }]
+    }
+    response = requests.post(DISCORD_WEBHOOK_URL, json=payload)
+    if response.status_code == 204:
+        logging.info(f"Sent alert to Discord: {title} - {description}")
+    else:
+        logging.error(f"Failed to send alert to Discord. Status code: {response.status_code}, Response: {response.text}")
 
 def clean_url(url):
     """
@@ -330,6 +357,20 @@ if h1_after_login == "weverse":
         # Scrape images from the artist's artist page
         scraped_artist_image_urls = scrape_artist_images(driver, artist)
         logging.info(f"Scraped {len(scraped_artist_image_urls)} new images from {artist}'s artist page.")
+
+        # Sync the downloaded images to Dropbox after scraping images for the artist
+        local_directory = f"./downloaded_images/{artist}"
+        dropbox_directory = f"/weverse/{artist}"
+
+        try:
+            logging.info(f"Starting Dropbox sync for artist {artist}...")
+            bot.sync_folder(local_directory, dropbox_directory)
+            logging.info(f"Completed Dropbox sync for artist {artist}.")
+        except Exception as e:
+            error_title = f"Error for Artist: {artist}"
+            error_description = f"Error during Dropbox sync: {e}"
+            logging.error(f"{error_title} - {error_description}")
+            send_discord_alert(error_title, error_description)
 
         logging.info(f"Finished processing artist: {artist}")
 
