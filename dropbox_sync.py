@@ -71,7 +71,7 @@ class DropboxSyncBot:
         except requests.exceptions.HTTPError as err:
             logging.error(err)
         else:
-            loggig.info("Payload delivered successfully, code {}.".format(response.status_code))
+            logging.info("Payload delivered successfully, code {}.".format(response.status_code))
 
     def sync_folder(self, local_folder, dropbox_folder):
         for root, dirs, files in os.walk(local_folder):

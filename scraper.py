@@ -24,14 +24,23 @@ PASSWORD = os.getenv("PASSWORD")
 
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
-DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
-bot = DropboxSyncBot(DROPBOX_TOKEN, DISCORD_WEBHOOK_URL)
+ENABLE_DROPBOX_SYNC = os.getenv("ENABLE_DROPBOX_SYNC", "True").lower() == "true"
+
+if ENABLE_DROPBOX_SYNC:
+    logging.info("Dropbox sync is ENABLED.")
+    DROPBOX_TOKEN = os.getenv("DROPBOX_TOKEN")
+    bot = DropboxSyncBot(DROPBOX_TOKEN, DISCORD_WEBHOOK_URL)
+else:
+    logging.info("Dropbox sync is DISABLED.")
+
+MAX_FEED_URLS = int(os.getenv("MAX_FEED_URLS", 1000))
+MAX_ARTIST_URLS = int(os.getenv("MAX_ARTIST_URLS", 1000))
 
 # Create a unique directory for this execution to store screenshots and downloads
 EXECUTION_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S/")
 SCREENSHOT_DIR = os.path.join("screenshots", EXECUTION_TIMESTAMP)
 
-ARTISTS = ["newjeansofficial", "riize", "seventeen", "redvelvet"]
+ARTISTS = [artist.strip() for artist in os.getenv("ARTISTS").split(',')]
 # ARTISTS = ["riize", "redvelvet"]
 
 def save_urls_to_file(urls, page_type, filename=None):
@@ -203,7 +212,7 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
         save_urls_to_file(existing_urls.union(new_image_urls), 'feed')
 
         # Trim the saved URLs to keep only the most recent ones
-        trim_saved_urls(f"feed_saved_urls.txt")
+        trim_saved_urls(f"feed_saved_urls.txt", max_urls=MAX_FEED_URLS)
 
     return new_image_urls
 
@@ -265,6 +274,7 @@ def scrape_artist_images(driver, artist_name, max_scroll_times=50, scroll_delay=
 
     # Trim the saved URLs to keep only the most recent ones
     trim_saved_urls(f"artist_saved_urls.txt")
+    trim_saved_urls(f"artist_saved_urls.txt", max_urls=MAX_ARTIST_URLS)
 
     return new_image_urls
 
@@ -366,19 +376,20 @@ if h1_after_login == "weverse":
         logging.info(f"Finished processing artist: {artist}")
 
 # After scraping for all artists, start the syncing process
-for artist in ARTISTS:
-    local_directory = f"./downloaded_images/{artist}"
-    dropbox_directory = f"/weverse/{artist}"
+if ENABLE_DROPBOX_SYNC:
+    for artist in ARTISTS:
+        local_directory = f"./downloaded_images/{artist}"
+        dropbox_directory = f"/weverse/{artist}"
 
-    try:
-        logging.info(f"Starting Dropbox sync for artist {artist}...")
-        bot.sync_folder(local_directory, dropbox_directory)
-        logging.info(f"Completed Dropbox sync for artist {artist}.")
-    except Exception as e:
-        error_title = f"Error for Artist: {artist}"
-        error_description = f"Error during Dropbox sync: {e}"
-        logging.error(f"{error_title} - {error_description}")
-        send_discord_alert(error_title, error_description)
+        try:
+            logging.info(f"Starting Dropbox sync for artist {artist}...")
+            bot.sync_folder(local_directory, dropbox_directory)
+            logging.info(f"Completed Dropbox sync for artist {artist}.")
+        except Exception as e:
+            error_title = f"Error for Artist: {artist}"
+            error_description = f"Error during Dropbox sync: {e}"
+            logging.error(f"{error_title} - {error_description}")
+            send_discord_alert(error_title, error_description)
 
 # Close the browser
 driver.close()

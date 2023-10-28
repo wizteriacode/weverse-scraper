@@ -1,6 +1,6 @@
 # weverse-scraper
 
-This Python script logs into Weverse, navigates to specified feeds and artist pages, and then scrapes and downloads images. Only new images that haven't been previously downloaded are saved. Once the images are scraped and downloaded, they are synced to a specified Dropbox directory and any new directories created during the sync are alerted via Discord.
+This Python script logs into Weverse, navigates to specified feeds and artist pages, and then scrapes and downloads images. Only new images that haven't been previously downloaded are saved. Once the images are scraped and downloaded, they can optionally be synced to a specified Dropbox directory based on user preferences. If Dropbox sync is enabled and a new directory is created during the sync process, an alert will be sent via Discord.
 
 ## Table of Contents
 
@@ -8,6 +8,7 @@ This Python script logs into Weverse, navigates to specified feeds and artist pa
 - [Setup](#setup)
 - [Usage](#usage)
 - [Functions](#functions)
+- [Maintenance](#maintenance)
 - [Dropbox Sync](#dropbox-sync)
 - [Discord Alerts](#discord-alerts)
 
@@ -33,12 +34,9 @@ This Python script logs into Weverse, navigates to specified feeds and artist pa
    pip3 install -r requirements.txt
    ```
 
-3. Create a `.env` file in the root directory and provide your Weverse credentials, Dropbox token, and Discord webhook URL:
+3. Create a `.env` file in the root directory based on the `.env.sample` provided. Fill in your Weverse credentials, the desired artist names, and optionally your Dropbox token and Discord webhook URL:
    ```
-   EMAIL=your_email_here
-   PASSWORD=your_password_here
-   DROPBOX_TOKEN=your_dropbox_token_here
-   DISCORD_WEBHOOK_URL=your_discord_webhook_url_here
+   # Refer to .env.sample for detailed variable explanations
    ```
 
 ## Usage
@@ -51,7 +49,7 @@ python3 scraper.py
 This will perform the following actions:
 - Launch Chrome WebDriver.
 - Navigate to Weverse's login page and log in using the credentials from `.env`.
-- Navigate to the specified feeds and artist pages of multiple artists after logging in.
+- Navigate to the specified feeds and artist pages of the listed artists.
 - Scroll through each page until it encounters previously saved images or reaches a maximum limit.
 - Scrape and download only new images found by cross-referencing with a local file that tracks previously downloaded images.
 
@@ -85,11 +83,11 @@ This automatic maintenance ensures efficient cross-referencing of new images wit
 
 ## Dropbox Sync
 
-After successfully scraping and downloading images from Weverse, the script initiates a sync process to a specified Dropbox directory. The Dropbox syncing is handled by the `DropboxSyncBot` class, which checks for new directories and files to sync while avoiding redundant uploads.
+If enabled, after successfully scraping and downloading images from Weverse, the script initiates a sync process to a specified Dropbox directory. The Dropbox syncing is handled by the `DropboxSyncBot` class, which checks for new directories and files to sync while avoiding redundant uploads.
 
 To set up Dropbox sync:
 1. Ensure you have the `DROPBOX_TOKEN` set in the `.env` file.
-2. The script will sync the downloaded images to a directory structure in Dropbox that mirrors the local structure.
+2. If `ENABLE_DROPBOX_SYNC` is set to `true`, the script will sync the downloaded images to a directory structure in Dropbox that mirrors the local structure. Otherwise, this step will be skipped.
 
 ## Discord Alerts
 
@@ -97,4 +95,4 @@ The script incorporates a feature to send alerts to a Discord channel via a webh
 
 To set up Discord alerts:
 1. Provide your Discord webhook URL in the `.env` file with the key `DISCORD_WEBHOOK_URL`.
-2. The script will automatically send alerts when new directories are synced to Dropbox.
+2. If a new directory is created in Dropbox during the syncing process, the script will automatically send an alert to the specified Discord channel.
