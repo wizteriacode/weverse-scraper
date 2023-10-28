@@ -71,6 +71,10 @@ Screenshots taken during the script's execution will be saved in the `screenshot
 
 Both scraping functions ensure only new images are downloaded by checking against a local file of previously downloaded image URLs.
 
+### Handling Pinned Posts
+
+The script has been enhanced to identify and handle pinned or official posts on the Weverse feed. These posts may be pinned at the top of the feed and can interfere with the scraping process. The script detects such posts by looking for specific keywords, such as "おすすめ投稿" (Japanese) and "Recommended post" (English). Once identified, these images are skipped to ensure efficient scraping of new content. If the keywords or behavior of pinned posts change in the future, adjustments to the script might be required.
+
 ## Maintenance
 
 The script maintains a local file for tracking downloaded image URLs. To ensure that this file doesn't grow indefinitely, the script is designed to:

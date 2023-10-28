@@ -164,6 +164,17 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
     # Load existing URLs
     existing_urls = {clean_url(url) for url in load_urls_from_file("feed")}
 
+    # Check the first three posts for pinned posts
+    pinned_img_links = []
+    first_three_posts = driver.find_elements(By.CSS_SELECTOR, ".PostListItemView_post_item__XJ0uc")[:10]
+    for post in first_three_posts:
+        date_element = post.find_element(By.CSS_SELECTOR, ".PostHeaderView_date__XJXBZ")
+        if "おすすめ投稿" in date_element.text or "Recommended post" in date_element.text:
+            img_element = post.find_element(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
+            img_url = clean_url(img_element.get_attribute("src"))
+            pinned_img_links.append(img_url)
+            logging.info(f"Identified pinned post with image URL: {img_url}. This image will be skipped.")
+
     while True:
         # Scroll down
         driver.execute_script("window.scrollBy(0, 2000);")
@@ -175,7 +186,7 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
 
         # Extract post images
         post_images = driver.find_elements(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
-        post_img_links = {clean_url(img.get_attribute("src")) for img in post_images}
+        post_img_links = {clean_url(img.get_attribute("src")) for img in post_images} - set(pinned_img_links)
 
         # Update all_images set
         all_images.update(post_img_links)
@@ -215,6 +226,7 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
         trim_saved_urls(f"feed_saved_urls.txt", max_urls=MAX_FEED_URLS)
 
     return new_image_urls
+
 
 
 def scrape_artist_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
