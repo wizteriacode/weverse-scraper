@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 import undetected_chromedriver as uc
 from dotenv import load_dotenv
 
@@ -167,14 +168,19 @@ def scrape_images(driver, artist_name, max_scroll_times=50, scroll_delay=2):
 
     # Check the first three posts for pinned posts
     pinned_img_links = []
+    time.sleep(2)  # Wait for a short duration to ensure that dynamic content is loaded
     first_three_posts = driver.find_elements(By.CSS_SELECTOR, ".PostListItemView_post_item__XJ0uc")[:10]
     for post in first_three_posts:
         date_element = post.find_element(By.CSS_SELECTOR, ".PostHeaderView_date__XJXBZ")
         if "おすすめ投稿" in date_element.text or "Recommended post" in date_element.text:
-            img_element = post.find_element(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
-            img_url = clean_url(img_element.get_attribute("src"))
-            pinned_img_links.append(img_url)
-            logging.info(f"Identified pinned post with image URL: {img_url}. This image will be skipped.")
+            try:
+                img_element = post.find_element(By.CSS_SELECTOR, ".PostPreviewImageView_post_image__zLzXH")
+                img_url = clean_url(img_element.get_attribute("src"))
+                pinned_img_links.append(img_url)
+                logging.info(f"Identified pinned post with image URL: {img_url}. This image will be skipped.")
+            except NoSuchElementException:
+                logging.info(f"Identified a pinned post without an image. Skipping this post.")
+                continue
 
     while True:
         # Scroll down
