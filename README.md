@@ -34,7 +34,7 @@ This Python script logs into Weverse, navigates to specified feeds and artist pa
    pip3 install -r requirements.txt
    ```
 
-3. Create a `.env` file in the root directory based on the `.env.sample` provided. Fill in your Weverse credentials, the desired artist names, and optionally your Dropbox token and Discord webhook URL:
+3. Create a `.env` file in the root directory based on the `.env.sample` provided. Fill in your Weverse credentials, the desired artist names, artists to skip for feed scraping, artists to skip for artist page scraping, and optionally your Dropbox token and Discord webhook URL: 
    ```
    # Refer to .env.sample for detailed variable explanations
    ```

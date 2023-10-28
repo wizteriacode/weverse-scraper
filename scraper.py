@@ -41,7 +41,8 @@ EXECUTION_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S/")
 SCREENSHOT_DIR = os.path.join("screenshots", EXECUTION_TIMESTAMP)
 
 ARTISTS = [artist.strip() for artist in os.getenv("ARTISTS").split(',')]
-# ARTISTS = ["riize", "redvelvet"]
+SKIP_FEED_ARTISTS = set(artist.strip() for artist in os.getenv('SKIP_FEED_ARTISTS', '').split(','))
+SKIP_ARTIST_PAGE_ARTISTS = set(artist.strip() for artist in os.getenv('SKIP_ARTIST_PAGE_ARTISTS', '').split(','))
 
 def save_urls_to_file(urls, page_type, filename=None):
     if filename is None:
@@ -366,8 +367,11 @@ if h1_after_login == "weverse":
 
         logging.info(f"Starting image scraping for artist {artist}")
         # Scrape images from the artist's feed page
-        scraped_feed_image_urls = scrape_images(driver, artist)
-        logging.info(f"Scraped {len(scraped_feed_image_urls)} new images from {artist}'s feed.")
+        if artist not in SKIP_FEED_ARTISTS:
+            scraped_feed_image_urls = scrape_images(driver, artist)
+            logging.info(f"Scraped {len(scraped_feed_image_urls)} new images from {artist}'s feed.")
+        else:
+            logging.info(f"Skipping scraping for {artist}'s feed as per configuration.")
 
         # Navigate to the artist's artist page
         artist_page_url = f"https://weverse.io/{artist}/artist"
@@ -378,12 +382,11 @@ if h1_after_login == "weverse":
         screenshot(driver, f"{artist}_artist_page_after_login")
 
         # Scrape images from the artist's artist page
-        scraped_artist_image_urls = scrape_artist_images(driver, artist)
-        logging.info(f"Scraped {len(scraped_artist_image_urls)} new images from {artist}'s artist page.")
-
-        # Sync the downloaded images to Dropbox after scraping images for the artist
-        local_directory = f"./downloaded_images/{artist}"
-        dropbox_directory = f"/weverse/{artist}"
+        if artist not in SKIP_ARTIST_PAGE_ARTISTS:
+            scraped_artist_image_urls = scrape_artist_images(driver, artist)
+            logging.info(f"Scraped {len(scraped_artist_image_urls)} new images from {artist}'s artist page.")
+        else:
+            logging.info(f"Skipping scraping for {artist}'s artist page as per configuration.")
 
         logging.info(f"Finished processing artist: {artist}")
 
