@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, TimeoutException
 import undetected_chromedriver as uc
 from dotenv import load_dotenv
 
@@ -132,6 +132,41 @@ def get_h1_text(driver):
     except Exception as e:
         logging.error(f"Error retrieving <h1> text: {e}")
         return None
+
+def click_confirmation_button(driver):
+    try:
+        logging.info("Checking for alert window...")
+        alert_window = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='alert']"))
+        )
+        if alert_window:
+            logging.info("Alert window found. Checking for confirmation button...")
+            confirm_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "div[role='alert'] button[type='button']"))
+            )
+            confirm_button.click()
+            logging.info("Confirmation button clicked.")
+            time.sleep(10)
+            return True
+    except (NoSuchElementException, ElementClickInterceptedException) as e:
+        logging.warning(f"Confirmation button click intercepted or not found: {e}")
+        return False
+    except TimeoutException:
+        logging.warning(f"Timeout waiting for alert window or confirmation button")
+        return False
+
+def click_submit_button(driver):
+    try:
+        submit_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
+        )
+        submit_button.click()
+        logging.info("Submit button clicked.")
+        time.sleep(10)
+        return True
+    except (NoSuchElementException, ElementClickInterceptedException) as e:
+        logging.warning(f"Submit button click intercepted or not found: {e}")
+        return False
 
 def screenshot(driver, name, directory=SCREENSHOT_DIR):
     """
@@ -353,6 +388,38 @@ login_button.click()
 time.sleep(10)
 
 screenshot(driver, "after_login")
+
+h1_after_login = get_h1_text(driver)
+logging.info(f"h1: {get_h1_text(driver)}")
+
+# Handle additional login steps if necessary
+
+
+if h1_after_login != "weverse":
+    logging.info("There's something wrong with the login process")
+
+    try:
+        logging.info("Checking for email code input...")
+        email_code_input = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.ID, 'otpCode'))
+        )
+        if email_code_input:
+            logging.info("Email code input found. Prompting user for email code...")
+            email_code = input("Enter the code sent to your email: ")
+            email_code_input.send_keys(email_code)
+            logging.info("Email code entered.")
+
+            # Always try to click the confirmation button first
+            click_confirmation_button(driver)
+
+            logging.info("Trying to click submit button...")
+            if click_submit_button(driver):
+                logging.info("Checking for confirmation button again...")
+                click_confirmation_button(driver)
+    except NoSuchElementException:
+        logging.info("No additional login step required.")
+
+time.sleep(10)
 
 h1_after_login = get_h1_text(driver)
 logging.info(f"h1: {get_h1_text(driver)}")
